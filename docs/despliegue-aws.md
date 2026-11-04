@@ -105,3 +105,38 @@ Amplify build (npm run build) -> publica dist/ con HTTPS + CDN
                    ▼
 Frontend llama a la Lambda  ->  CORS restringido a la URL de Amplify
 ```
+
+---
+
+## Problemas comunes
+
+### "CORS policy… blocked" apuntando a `http://localhost:8000`
+
+Si en la consola del navegador ves algo como:
+
+```
+Access to fetch at 'http://localhost:8000/analizar' from origin
+'https://main.xxxx.amplifyapp.com' has been blocked by CORS policy
+```
+
+El verdadero problema **no es el CORS**: tu frontend desplegado está llamando a
+`localhost` en vez de a tu Lambda. Vite "hornea" `VITE_API_URL` en el momento
+del build, así que si la variable no existía al compilar, usó el valor por
+defecto del código (`http://localhost:8000`).
+
+Solución:
+1. En Amplify → App settings → Environment variables, define
+   `VITE_API_URL` con la `FunctionUrl` (empieza con `https://`, sin barra final).
+2. **Redeploy** en Amplify (Deployments → Redeploy this version). Sin recompilar,
+   la variable no entra al bundle.
+3. Luego ajusta el CORS de la Lambda a tu dominio (sección 3).
+
+Para comprobar qué URL quedó compilada, abre el sitio, F12 → pestaña Network, y
+mira a qué host va la petición `analizar`.
+
+### El preflight (OPTIONS) falla con header duplicado
+
+La Function URL ya inyecta encabezados `Access-Control-*` por su bloque `Cors`.
+El handler está escrito para reflejar el origen sin duplicar. Si cambiaste el
+`template.yaml`, mantén el CORS en **un solo lugar** (preferible el bloque
+`FunctionUrlConfig.Cors`).

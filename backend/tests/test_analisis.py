@@ -221,3 +221,45 @@ def test_lambda_handler_body_invalido():
     event = {"requestContext": {"http": {"method": "POST"}}, "body": "{no-json"}
     res = handler(event, None)
     assert res["statusCode"] == 400
+
+
+def test_lambda_handler_refleja_origen_con_asterisco(monkeypatch):
+    # Con CORS_ORIGIN="*" debe reflejar el Origin de la petición.
+    import importlib
+
+    import app.lambda_handler as lh
+
+    monkeypatch.setenv("CORS_ORIGIN", "*")
+    importlib.reload(lh)
+
+    origen = "https://main.ddt6q7wyxg0ov.amplifyapp.com"
+    event = {
+        "requestContext": {"http": {"method": "OPTIONS"}},
+        "headers": {"origin": origen},
+    }
+    res = lh.handler(event, None)
+    assert res["headers"]["Access-Control-Allow-Origin"] == origen
+    assert res["headers"]["Vary"] == "Origin"
+
+    importlib.reload(lh)  # restaura el estado por defecto
+
+
+def test_lambda_handler_origen_fijo(monkeypatch):
+    # Con CORS_ORIGIN fijo debe devolver esa URL exacta.
+    import importlib
+
+    import app.lambda_handler as lh
+
+    permitido = "https://mi-frontend.example.com"
+    monkeypatch.setenv("CORS_ORIGIN", permitido)
+    importlib.reload(lh)
+
+    event = {
+        "requestContext": {"http": {"method": "OPTIONS"}},
+        "headers": {"Origin": "https://otro-sitio.com"},
+    }
+    res = lh.handler(event, None)
+    assert res["headers"]["Access-Control-Allow-Origin"] == permitido
+
+    monkeypatch.delenv("CORS_ORIGIN", raising=False)
+    importlib.reload(lh)
