@@ -1,0 +1,175 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Menú lateral */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar h1 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.nav-link {
+  display: block;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.nav-link:hover {
+  background: var(--surface-alt);
+}
+
+.nav-link.active {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+/* Contenido */
+.content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 820px;
+}
+
+.content h2 {
+  margin-top: 0;
+}
+
+/* Formularios */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.field label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.field input {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.btn {
+  padding: 0.65rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Interruptor de tema */
+.theme-toggle {
+  margin-top: auto;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+/* Tarjetas */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.metric {
+  background: var(--surface-alt);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+
+.metric .label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.metric .value {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+/* Alertas */
+.alert {
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.6rem;
+  border-left: 4px solid transparent;
+  font-size: 0.95rem;
+}
+
+.alert.info {
+  background: var(--info-bg);
+  border-left-color: var(--info);
+}
+
+.alert.advertencia {
+  background: var(--warning-bg);
+  border-left-color: var(--warning);
+}
+
+.alert.peligro {
+  background: var(--danger-bg);
+  border-left-color: var(--danger);
+}
+
+.recomendacion {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.error-text {
+  color: var(--danger);
+}

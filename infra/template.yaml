@@ -1,0 +1,19 @@
+# Despliegue de la API FastAPI.
+#
+# Este descriptor de docker-compose levanta la API en un contenedor con
+# Uvicorn y expone el puerto 8000. Sirve tanto para desarrollo local como de
+# base para un despliegue en cualquier runtime de contenedores.
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ../backend
+      dockerfile: ../infra/Dockerfile
+    image: decisiones-financieras-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Orígenes permitidos por CORS (frontend). Ajustar en producción.
+      CORS_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173"
+    restart: unless-stopped
