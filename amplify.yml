@@ -1,0 +1,24 @@
+# Build spec para AWS Amplify Hosting.
+#
+# El frontend vive en la subcarpeta frontend/, por eso se usa la sintaxis de
+# monorepo con "applications" + appRoot. En la consola de Amplify define la
+# variable de entorno VITE_API_URL con la Lambda Function URL que imprime SAM.
+version: 1
+applications:
+  - appRoot: frontend
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        # Vite genera la salida en dist/ (relativo a appRoot).
+        baseDirectory: dist
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - node_modules/**/*

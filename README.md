@@ -84,17 +84,32 @@ npm run dev
 
 App en `http://localhost:5173`. Llama a la API usando `VITE_API_URL`.
 
-## Despliegue con SAM (Lambda + Function URL)
+## Despliegue en AWS (Amplify + SAM)
 
-```bash
-cd infra
-sam build
-sam deploy --guided
-```
+Guía paso a paso: [`docs/despliegue-aws.md`](docs/despliegue-aws.md).
 
-El output `FunctionUrl` es la URL pública de la API: ponla en `VITE_API_URL`
-del frontend antes de publicar. El frontend se puede alojar en Amplify Hosting
-o en S3 + CloudFront (región us-east-2).
+En resumen:
+
+1. **API con SAM** (Lambda + Function URL con CORS):
+   ```bash
+   cd infra
+   sam build
+   sam deploy --guided
+   ```
+   El output `FunctionUrl` es la URL pública de la API.
+
+2. **Frontend con Amplify Hosting**: conecta el repo en la consola de Amplify.
+   Ya existe `amplify.yml` en la raíz (configurado para el subdirectorio
+   `frontend/`). En las variables de entorno de Amplify define
+   `VITE_API_URL` con la `FunctionUrl` del paso 1.
+
+3. **CORS**: vuelve a desplegar la API pasando la URL de Amplify para
+   restringir el acceso:
+   ```bash
+   sam deploy --parameter-overrides CorsOrigin=https://tu-app.amplifyapp.com
+   ```
+
+Región sugerida: us-east-2 (capa gratuita o créditos).
 
 ### Alternativa en contenedor (dev / hosting propio)
 

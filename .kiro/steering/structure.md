@@ -26,14 +26,17 @@ AplicacionDecisionesFinancieras/
 │   │   ├── models.py         modelos Pydantic
 │   │   ├── main.py           API FastAPI
 │   │   └── lambda_handler.py handler para AWS Lambda
-│   ├── tests/           pruebas del flujo demo de Ana
-│   └── requirements.txt
+│   ├── tests/               pruebas del flujo demo de Ana
+│   ├── requirements.txt     dependencias de la Lambda (fastapi, pydantic)
+│   └── requirements-dev.txt pytest, httpx y lo anterior (solo desarrollo)
 ├── infra/               AWS SAM
 │   ├── template.yaml    Lambda + Function URL con CORS
 │   └── Dockerfile       alternativa en contenedor (dev / hosting propio)
 ├── docs/
-│   ├── arquitectura.md  diagrama y notas
-│   └── pitch/           diapositivas y guion
+│   ├── arquitectura.md    diagrama y notas
+│   ├── despliegue-aws.md  guía de Amplify + SAM
+│   └── pitch/             diapositivas y guion
+├── amplify.yml          build spec de Amplify Hosting (appRoot: frontend)
 ├── .gitignore
 └── README.md
 ```
