@@ -1,19 +1,18 @@
 # Stack y reglas técnicas
 
 ## Stack
-- Frontend: React con Vite, en /frontend. JavaScript simple, sin librerías
-  pesadas.
-- Backend: Python en /backend. La lógica vive en `app/` (cálculos, alertas,
-  modelos) y se expone de dos maneras equivalentes:
-  - API FastAPI (`app/main.py`) para desarrollo local y contenedor.
-  - Handler AWS Lambda (`app/lambda_handler.py`) para el despliegue con SAM.
-- Infraestructura como código con AWS SAM, en /infra/template.yaml.
-- API: Lambda Function URL pública con CORS configurado.
-- Hosting del frontend: Amplify Hosting, o S3 con CloudFront.
-- Región: us-east-2. Todo en capa gratuita o créditos; evitar servicios caros.
+- App 100% frontend: React con Vite, en /frontend. JavaScript simple, sin
+  librerías pesadas. No hay backend.
+- Todo el cálculo corre en el navegador (`src/services/analisis.js`). La app es
+  estática y no hace llamadas de red.
+- Hosting: AWS Amplify Hosting (build spec en `amplify.yml`). También sirve
+  cualquier hosting estático (S3 + CloudFront, Netlify, etc.).
+- No requiere variables de entorno ni servicios en la nube más allá del hosting
+  estático.
 
 ## Reglas de cálculo
 - Todo el cálculo es determinista, con fórmulas. Nunca usar IA para calcular.
+- Las fórmulas y los umbrales viven en un solo lugar: `src/services/analisis.js`.
 - Las comisiones y anticipos se pagan por adelantado.
 - `neto = monto - comisiones`
 - `total = pago * plazo + comisiones`
@@ -40,6 +39,6 @@
 - Diseño pensado primero para escritorio, con menú lateral fijo. Que también se
   vea bien en celular.
 - Montos con formato de pesos mexicanos (es-MX).
-- La URL de la API viene de la variable VITE_API_URL.
+- El análisis se recalcula solo en el navegador al cambiar cualquier dato.
 - Íconos SVG (sin emojis). Estética con glassmorphism, neumorfismo y
-  animaciones suaves.
+  animaciones suaves. Gráficas en SVG propio (sin librerías).

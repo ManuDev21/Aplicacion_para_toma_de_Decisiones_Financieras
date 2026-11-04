@@ -1,17 +1,25 @@
 # Arquitectura
 
-Aquí va el diagrama de arquitectura (`arquitectura.png`) y su archivo fuente.
+La app es 100% frontend (estática): todo el cálculo corre en el navegador, no
+hay backend ni llamadas de red.
 
 Flujo general:
 
 ```
 Navegador (React + Vite)
-    │  POST /analizar  (fetch con VITE_API_URL)
+    │  el usuario captura perfil y oferta
     ▼
-API FastAPI (Uvicorn)
-    ├─ app/calculos.py   → total, sobrecosto, tasa estimada
-    └─ app/alertas.py    → reglas de alerta y recomendación
-    │  JSON con el análisis
+src/hooks/useAnalisis.js   (recalcula al cambiar cualquier dato)
+    │
     ▼
-Navegador muestra tarjetas + alertas
+src/services/analisis.js
+    ├─ fórmulas: neto, total, extra, tasa mensual (bisección), TEA
+    ├─ libre y % del dinero libre
+    └─ alertas, veredicto y sugerencia
+    │
+    ▼
+La UI muestra tarjetas, métricas animadas, gráficas (SVG) y alertas
 ```
+
+Despliegue: AWS Amplify Hosting compila el frontend (`amplify.yml`) y lo publica
+con HTTPS y CDN. Al ser estática, también funciona en cualquier hosting estático.

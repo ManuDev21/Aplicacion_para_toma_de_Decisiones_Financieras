@@ -9,44 +9,30 @@ AplicacionDecisionesFinancieras/
 │   └── specs/           requirements, design y tasks por feature
 ├── frontend/            React + Vite (JS simple, sin librerías pesadas)
 │   ├── src/
-│   │   ├── components/  Sidebar, ThemeToggle, MetricCard, AlertList, icons
+│   │   ├── components/  Sidebar, ThemeToggle, MetricCard, AlertList, icons,
+│   │   │                EstadoPill, ValorAnimado y charts/ (dona, barra, línea)
 │   │   ├── pages/       Perfil y AnalizarOferta
-│   │   ├── hooks/       usePerfil (localStorage) y useTheme
-│   │   ├── services/    api.js (fetch) y formato.js (MXN)
+│   │   ├── hooks/       usePerfil, useTheme, useAnalisis, useContador
+│   │   ├── services/    analisis.js (cálculo local) y formato.js (MXN)
 │   │   ├── styles/      theme.css (variables) y app.css
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   ├── index.html
 │   ├── package.json
 │   └── .env.example
-├── backend/             Python (lógica compartida FastAPI + Lambda)
-│   ├── app/
-│   │   ├── calculos.py       fórmulas (determinista, sin IA)
-│   │   ├── alertas.py        umbrales, alertas y veredicto
-│   │   ├── models.py         modelos Pydantic
-│   │   ├── main.py           API FastAPI
-│   │   └── lambda_handler.py handler para AWS Lambda
-│   ├── tests/               pruebas del flujo demo de Ana
-│   ├── requirements.txt     dependencias de la Lambda (fastapi, pydantic)
-│   └── requirements-dev.txt pytest, httpx y lo anterior (solo desarrollo)
-├── infra/               AWS SAM
-│   ├── template.yaml    Lambda + Function URL con CORS
-│   └── Dockerfile       alternativa en contenedor (dev / hosting propio)
 ├── docs/
-│   ├── arquitectura.md    diagrama y notas
-│   ├── despliegue-aws.md  guía de Amplify + SAM
-│   └── pitch/             diapositivas y guion
+│   ├── arquitectura.md  diagrama y notas
+│   └── pitch/           diapositivas y guion
 ├── amplify.yml          build spec de Amplify Hosting (appRoot: frontend)
 ├── .gitignore
 └── README.md
 ```
 
 ## Reglas del equipo
-- El frontend no asume la URL de la API: siempre vía `VITE_API_URL`.
-- El backend (`app/`) es la única fuente de verdad de los cálculos y las
-  alertas. FastAPI y Lambda comparten la misma función `analizar_oferta`.
-- Toda regla o umbral nuevo debe venir con una prueba en `backend/tests/`.
-- Los commits se hacen a ramas, nunca directo a `main`.
+- Toda la lógica (fórmulas, umbrales, alertas, veredicto) vive en un solo lugar:
+  `frontend/src/services/analisis.js`. Es la única fuente de verdad del cálculo.
+- El cálculo es determinista, sin IA, y corre en el navegador. No hay backend.
+- Los commits se hacen a ramas; `main` es la rama de producción de Amplify.
 - Nada de credenciales ni valores reales en los archivos versionados.
 - Textos en español de México; montos en MXN (es-MX).
 - Íconos SVG, sin emojis.

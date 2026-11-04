@@ -1,8 +1,8 @@
 # Build spec para AWS Amplify Hosting.
 #
-# El frontend vive en la subcarpeta frontend/, por eso se usa la sintaxis de
-# monorepo con "applications" + appRoot. En la consola de Amplify define la
-# variable de entorno VITE_API_URL con la Lambda Function URL que imprime SAM.
+# La app es 100% estática: todo el cálculo corre en el navegador, no hay
+# backend ni variables de entorno obligatorias. El frontend vive en la
+# subcarpeta frontend/, por eso se usa la sintaxis de monorepo con appRoot.
 version: 1
 applications:
   - appRoot: frontend

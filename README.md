@@ -6,27 +6,51 @@ efectiva anual, qué parte de tu dinero libre se lleva y un veredicto claro.
 
 Pensada para México: textos en español y montos en pesos (MXN).
 
-- **Frontend:** React + Vite (JavaScript simple, sin librerías pesadas)
-- **Backend:** Python. Lógica compartida que se expone como API FastAPI (local)
-  y como función AWS Lambda (producción)
-- **Infra:** AWS SAM (Lambda Function URL con CORS)
+**Es una app 100% frontend.** Todo el cálculo corre en tu navegador: no hay
+backend, no hay API, no hay base de datos y no necesita conexión a internet una
+vez cargada. Tus datos nunca salen de tu equipo.
+
+- **Stack:** React + Vite (JavaScript simple, sin librerías pesadas)
+- **Hosting:** AWS Amplify Hosting
 - **UI:** menú lateral fijo, tema claro/oscuro, íconos SVG, glassmorphism,
-  neumorfismo y animaciones suaves
+  neumorfismo, animaciones y gráficas en SVG
+- **App en vivo:** https://main.ddt6q7wyxg0ov.amplifyapp.com
 
 ## Estructura
 
 ```
 AplicacionDecisionesFinancieras/
 ├── .kiro/          steering y specs de Kiro
-├── frontend/       React + Vite
-├── backend/        lógica Python + FastAPI + handler Lambda + pruebas
-├── infra/          plantilla SAM y Dockerfile
+├── frontend/       la app React + Vite (todo el código y el cálculo)
 ├── docs/           arquitectura y pitch
+├── amplify.yml     build spec de Amplify (frontend/)
 ├── .gitignore
 └── README.md
 ```
 
+Toda la lógica vive en `frontend/src/services/analisis.js`.
+
+## Correr en local
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Abre `http://localhost:5173`. No hay que configurar variables de entorno.
+
+Para generar la versión de producción:
+
+```bash
+cd frontend
+npm run build      # genera frontend/dist/
+npm run preview    # sirve el build localmente para probarlo
+```
+
 ## Reglas de cálculo (deterministas, sin IA)
+
+Definidas en `frontend/src/services/analisis.js`:
 
 ```
 neto  = monto - comisiones
@@ -46,78 +70,28 @@ pct_del_libre = pago / libre     (nulo si libre <= 0 -> veredicto no conviene)
 - Veredicto: **no_conviene** si hay alguna alta, **con_cuidado** si solo hay
   medias, **conviene** si no hay ninguna.
 
-## Backend (FastAPI en local)
+### Caso de referencia (Ana)
 
-```bash
-cd backend
-python -m venv .venv
-# Windows PowerShell:
-.venv\Scripts\Activate.ps1
-# macOS / Linux:
-# source .venv/bin/activate
+Perfil: ingreso 8000, gastos 4500, deudas 600 → dinero libre 2900.
+Oferta: 5000 a 12 meses, pago 817, sin comisiones.
 
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
+Resultado: total **$9,804**, extra **$4,804**, tasa efectiva anual **≈ 300%**,
+**28%** del dinero libre, veredicto **no conviene**.
 
-API en `http://localhost:8000`, docs en `http://localhost:8000/docs`.
+## Despliegue en AWS Amplify
 
-### Pruebas
+El repositorio ya trae `amplify.yml` configurado (monorepo, `appRoot: frontend`).
 
-```bash
-cd backend
-pytest
-```
+1. Sube el proyecto a un repositorio Git.
+2. En la consola de AWS: **Amplify → conecta tu repo y la rama `main`**.
+3. Amplify detecta `amplify.yml`, corre `npm ci` + `npm run build` y publica
+   `frontend/dist/` con HTTPS y CDN.
 
-Incluye el flujo demo de **Ana** (ingreso 8000, gastos 4500, deudas 600) con la
-oferta 5000 / 12 meses / 817 → total **$9,804**, extra **$4,804**, tasa
-efectiva anual **≈ 300%**, **28%** del dinero libre, veredicto **no conviene**.
+Cada push a `main` dispara un nuevo despliegue automático. No hay que configurar
+variables de entorno.
 
-## Frontend (React + Vite)
-
-```bash
-cd frontend
-cp .env.example .env   # ajusta VITE_API_URL si hace falta
-npm install
-npm run dev
-```
-
-App en `http://localhost:5173`. Llama a la API usando `VITE_API_URL`.
-
-## Despliegue en AWS (Amplify + SAM)
-
-Guía paso a paso: [`docs/despliegue-aws.md`](docs/despliegue-aws.md).
-
-En resumen:
-
-1. **API con SAM** (Lambda + Function URL con CORS):
-   ```bash
-   cd infra
-   sam build
-   sam deploy --guided
-   ```
-   El output `FunctionUrl` es la URL pública de la API.
-
-2. **Frontend con Amplify Hosting**: conecta el repo en la consola de Amplify.
-   Ya existe `amplify.yml` en la raíz (configurado para el subdirectorio
-   `frontend/`). En las variables de entorno de Amplify define
-   `VITE_API_URL` con la `FunctionUrl` del paso 1.
-
-3. **CORS**: vuelve a desplegar la API pasando la URL de Amplify para
-   restringir el acceso:
-   ```bash
-   sam deploy --parameter-overrides CorsOrigin=https://tu-app.amplifyapp.com
-   ```
-
-Región sugerida: us-east-2 (capa gratuita o créditos).
-
-### Alternativa en contenedor (dev / hosting propio)
-
-```bash
-cd infra
-docker build -t decisiones-financieras-api -f Dockerfile ../backend
-docker run -p 8000:8000 decisiones-financieras-api
-```
+> Como la app es estática, también se puede alojar en S3 + CloudFront, Netlify,
+> Vercel o GitHub Pages sin cambios.
 
 ## Aviso
 
