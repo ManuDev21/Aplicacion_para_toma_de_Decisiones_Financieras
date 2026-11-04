@@ -8,20 +8,27 @@ from pydantic import BaseModel, Field
 
 
 class Perfil(BaseModel):
-    """Perfil financiero sencillo del usuario."""
+    """Perfil financiero del usuario (todo en MXN)."""
 
-    ingreso_mensual: float = Field(..., gt=0, description="Ingreso mensual neto")
+    nombre: str = Field("", description="Nombre del usuario")
+    ingreso_mensual: float = Field(..., ge=0, description="Ingreso mensual neto")
     gastos_fijos: float = Field(
-        0, ge=0, description="Gastos fijos mensuales (renta, servicios, etc.)"
+        0, ge=0, description="Gastos fijos mensuales (renta, servicios, comida)"
+    )
+    deudas_actuales: float = Field(
+        0, ge=0, description="Pagos de deudas actuales al mes"
     )
 
 
 class Oferta(BaseModel):
     """Datos de la oferta de financiamiento a analizar."""
 
-    monto: float = Field(..., gt=0, description="Monto financiado")
-    plazo_meses: int = Field(..., gt=0, description="Número de cuotas mensuales")
-    cuota_mensual: float = Field(..., gt=0, description="Cuota mensual a pagar")
+    monto: float = Field(..., gt=0, description="Monto recibido")
+    plazo_meses: int = Field(..., gt=0, description="Número de pagos mensuales")
+    pago_mensual: float = Field(..., gt=0, description="Pago mensual")
+    comisiones: float = Field(
+        0, ge=0, description="Comisiones y anticipos (se pagan por adelantado)"
+    )
 
 
 class AnalizarRequest(BaseModel):
@@ -34,9 +41,13 @@ class AnalizarRequest(BaseModel):
 class Alerta(BaseModel):
     """Una alerta emitida por las reglas de negocio."""
 
-    nivel: Literal["info", "advertencia", "peligro"]
+    nivel: Literal["alto", "medio"]
     codigo: str
+    etiqueta: str
     mensaje: str
+
+
+Veredicto = Literal["conviene", "con_cuidado", "no_conviene"]
 
 
 class AnalisisResponse(BaseModel):
@@ -44,12 +55,15 @@ class AnalisisResponse(BaseModel):
 
     monto: float
     plazo_meses: int
-    cuota_mensual: float
-    total_pagado: float
-    sobrecosto: float
-    sobrecosto_porcentaje: float
-    tasa_mensual_estimada: float
-    tasa_anual_estimada: float
-    porcentaje_ingreso_disponible: Optional[float] = None
-    recomendacion: str
+    pago_mensual: float
+    comisiones: float
+    neto: float
+    total: float
+    extra: float
+    tasa_mensual: float
+    tasa_efectiva_anual: float
+    libre: Optional[float] = None
+    pct_del_libre: Optional[float] = None
+    veredicto: Veredicto
+    sugerencia: str
     alertas: list[Alerta]

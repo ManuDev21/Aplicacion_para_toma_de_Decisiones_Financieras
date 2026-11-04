@@ -1,38 +1,80 @@
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "perfil";
+// El perfil se guarda como una lista de perfiles con un índice activo, aunque
+// la interfaz solo muestre uno. Así queda preparado para futuros perfiles.
+const STORAGE_KEY = "perfiles";
 
-const PERFIL_VACIO = { ingreso_mensual: "", gastos_fijos: "" };
+const PERFIL_VACIO = {
+  nombre: "",
+  ingreso_mensual: "",
+  gastos_fijos: "",
+  deudas_actuales: "",
+};
 
-function perfilInicial() {
+const ESTADO_VACIO = { perfiles: [{ ...PERFIL_VACIO }], activo: 0 };
+
+function estadoInicial() {
   try {
     const guardado = localStorage.getItem(STORAGE_KEY);
-    return guardado ? JSON.parse(guardado) : PERFIL_VACIO;
+    if (!guardado) return ESTADO_VACIO;
+    const parsed = JSON.parse(guardado);
+    if (
+      parsed &&
+      Array.isArray(parsed.perfiles) &&
+      parsed.perfiles.length > 0 &&
+      typeof parsed.activo === "number"
+    ) {
+      return parsed;
+    }
+    return ESTADO_VACIO;
   } catch {
-    return PERFIL_VACIO;
+    return ESTADO_VACIO;
   }
+}
+
+function aNumero(v) {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
 }
 
 /** Hook del perfil del usuario, persistido en localStorage. */
 export function usePerfil() {
-  const [perfil, setPerfil] = useState(perfilInicial);
+  const [estado, setEstado] = useState(estadoInicial);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(perfil));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
+  }, [estado]);
+
+  const perfil = estado.perfiles[estado.activo] ?? PERFIL_VACIO;
+
+  const guardar = useCallback((nuevo) => {
+    setEstado((prev) => {
+      const perfiles = [...prev.perfiles];
+      perfiles[prev.activo] = nuevo;
+      return { ...prev, perfiles };
+    });
+  }, []);
+
+  /** Devuelve el dinero libre calculado en el cliente (solo para mostrar). */
+  const libre = useCallback(() => {
+    return (
+      aNumero(perfil.ingreso_mensual) -
+      aNumero(perfil.gastos_fijos) -
+      aNumero(perfil.deudas_actuales)
+    );
   }, [perfil]);
 
-  const guardar = useCallback((nuevo) => setPerfil(nuevo), []);
-  const limpiar = useCallback(() => setPerfil(PERFIL_VACIO), []);
-
-  /** Devuelve el perfil en el formato que espera la API, o null si falta. */
+  /** Perfil en el formato de la API, o null si no hay ingreso válido. */
   const perfilParaApi = useCallback(() => {
-    const ingreso = parseFloat(perfil.ingreso_mensual);
-    if (!ingreso || ingreso <= 0) return null;
+    const ingreso = aNumero(perfil.ingreso_mensual);
+    if (ingreso <= 0) return null;
     return {
+      nombre: perfil.nombre || "",
       ingreso_mensual: ingreso,
-      gastos_fijos: parseFloat(perfil.gastos_fijos) || 0,
+      gastos_fijos: aNumero(perfil.gastos_fijos),
+      deudas_actuales: aNumero(perfil.deudas_actuales),
     };
   }, [perfil]);
 
-  return { perfil, guardar, limpiar, perfilParaApi };
+  return { perfil, guardar, libre, perfilParaApi };
 }

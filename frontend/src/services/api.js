@@ -1,5 +1,5 @@
-// Llamadas a la API FastAPI. La URL base viene de la variable de entorno
-// VITE_API_URL (ver .env.example). Nunca se escribe directamente aquí.
+// Llamadas a la API. La URL base viene de la variable de entorno VITE_API_URL
+// (ver .env.example). Nunca se escribe directamente aquí.
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 

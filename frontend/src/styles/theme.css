@@ -1,50 +1,85 @@
-/* Variables de color para tema claro y oscuro. */
+/* Variables de color para tema claro y oscuro.
+   Todos los colores de la app salen de estas variables. */
 
 :root,
-[data-theme="light"] {
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --surface-alt: #eef0f4;
-  --text: #1a1d24;
-  --text-muted: #5b6270;
-  --border: #d9dce3;
-  --primary: #2563eb;
-  --primary-contrast: #ffffff;
+[data-theme="dark"] {
+  --bg: #0a0f0d;
+  --bg-2: #0d1512;
 
-  --info: #2563eb;
-  --info-bg: #e5edff;
-  --warning: #b45309;
-  --warning-bg: #fdf0d5;
-  --danger: #b91c1c;
-  --danger-bg: #fde2e1;
+  /* Superficies con base para glassmorphism */
+  --surface: rgba(22, 32, 28, 0.72);
+  --surface-solid: #141c19;
+  --surface-alt: rgba(16, 24, 21, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.07);
+
+  --text: #e7efe9;
+  --text-muted: #8ba095;
+  --border: rgba(255, 255, 255, 0.06);
+
+  --primary: #34d399;
+  --primary-strong: #10b981;
+  --primary-contrast: #06241a;
+
+  --alto: #f87171;
+  --alto-bg: rgba(248, 113, 113, 0.14);
+  --medio: #fbbf24;
+  --medio-bg: rgba(251, 191, 36, 0.14);
+  --info: #60a5fa;
+  --info-bg: rgba(96, 165, 250, 0.14);
+
+  /* Sombras para neumorfismo (oscuro) */
+  --neu-light: rgba(255, 255, 255, 0.04);
+  --neu-dark: rgba(0, 0, 0, 0.55);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
-[data-theme="dark"] {
-  --bg: #0f1115;
-  --surface: #1a1d24;
-  --surface-alt: #232732;
-  --text: #e8eaed;
-  --text-muted: #9aa3b2;
-  --border: #2d3340;
-  --primary: #60a5fa;
-  --primary-contrast: #0f1115;
+[data-theme="light"] {
+  --bg: #eef2f0;
+  --bg-2: #e6ece9;
 
-  --info: #60a5fa;
-  --info-bg: #1e2a40;
-  --warning: #fbbf24;
-  --warning-bg: #3a2e12;
-  --danger: #f87171;
-  --danger-bg: #3a1c1c;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-solid: #ffffff;
+  --surface-alt: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.6);
+
+  --text: #15211c;
+  --text-muted: #5b6b64;
+  --border: rgba(16, 33, 28, 0.08);
+
+  --primary: #10b981;
+  --primary-strong: #059669;
+  --primary-contrast: #ffffff;
+
+  --alto: #dc2626;
+  --alto-bg: rgba(220, 38, 38, 0.1);
+  --medio: #b45309;
+  --medio-bg: rgba(180, 83, 9, 0.12);
+  --info: #2563eb;
+  --info-bg: rgba(37, 99, 235, 0.1);
+
+  /* Sombras para neumorfismo (claro) */
+  --neu-light: rgba(255, 255, 255, 0.9);
+  --neu-dark: rgba(16, 33, 28, 0.12);
+  --shadow-soft: 0 10px 30px rgba(16, 33, 28, 0.08);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
+  height: 100%;
+}
+
+body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
   color: var(--text);
-  transition: background 0.2s ease, color 0.2s ease;
+  background:
+    radial-gradient(900px 500px at 15% -10%, rgba(52, 211, 153, 0.12), transparent 60%),
+    radial-gradient(700px 500px at 110% 10%, rgba(16, 185, 129, 0.08), transparent 55%),
+    linear-gradient(160deg, var(--bg), var(--bg-2));
+  background-attachment: fixed;
+  transition: color 0.25s ease, background 0.4s ease;
 }

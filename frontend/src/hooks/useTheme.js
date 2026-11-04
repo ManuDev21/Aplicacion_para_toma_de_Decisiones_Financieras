@@ -5,11 +5,8 @@ const STORAGE_KEY = "tema";
 function temaInicial() {
   const guardado = localStorage.getItem(STORAGE_KEY);
   if (guardado === "light" || guardado === "dark") return guardado;
-  // Respeta la preferencia del sistema la primera vez.
-  const prefiereOscuro = window.matchMedia(
-    "(prefers-color-scheme: dark)"
-  ).matches;
-  return prefiereOscuro ? "dark" : "light";
+  // Por defecto, tema oscuro (como en el diseño principal).
+  return "dark";
 }
 
 /** Hook de tema claro/oscuro, persistido en localStorage. */
@@ -21,9 +18,11 @@ export function useTheme() {
     localStorage.setItem(STORAGE_KEY, tema);
   }, [tema]);
 
-  const alternar = useCallback(() => {
-    setTema((t) => (t === "dark" ? "light" : "dark"));
-  }, []);
+  const poner = useCallback((t) => setTema(t), []);
+  const alternar = useCallback(
+    () => setTema((t) => (t === "dark" ? "light" : "dark")),
+    []
+  );
 
-  return { tema, alternar };
+  return { tema, poner, alternar };
 }

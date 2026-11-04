@@ -1,29 +1,36 @@
-# Producto
+# Producto: ¿Cuánto me cuesta de verdad?
 
 ## Problema
-Muchas personas reciben ofertas de crédito o financiamiento (compras a plazos,
-préstamos personales, tarjetas) y no tienen una forma rápida de saber si la
-oferta les conviene. Comparar tasa, plazo y cuota mensual a mano es tedioso y
-propenso a errores.
+Muchas personas en México aceptan préstamos de apps, tarjetas departamentales
+o "meses sin intereses" sin saber cuánto pagarán en realidad ni si la oferta es
+una trampa. Queremos que lo sepan justo antes de endeudarse.
 
 ## Usuario
-Persona sin formación financiera que quiere una respuesta clara y honesta antes
-de aceptar una oferta de financiamiento.
+Persona joven o adulta con ingresos limitados que recibe una oferta de crédito.
+Textos en español de México, montos en pesos (MXN).
 
-## Alcance del MVP
-- El usuario guarda un **perfil** sencillo (ingreso mensual, gastos fijos).
-- El usuario pega los datos de una **oferta**: monto, plazo en meses y cuota
-  mensual (o tasa).
-- La app calcula el costo total, el interés implícito y el porcentaje de la
-  cuota sobre el ingreso disponible.
-- La app devuelve **alertas** claras (por ejemplo: "la cuota supera el 30 % de
-  tu ingreso disponible") y una recomendación simple.
+## Qué hace la app (alcance del MVP, no agregar más)
+1. Perfil: nombre, ingreso mensual, gastos fijos y pagos de deudas actuales.
+   Se guarda en el navegador y se conserva aunque se cierre la app.
+2. Analizar oferta: monto, plazo en meses, pago mensual y comisiones.
+3. Cálculo del costo total, cuánto se paga de más, tasa efectiva anual y qué
+   porcentaje del dinero libre se llevaría el pago.
+4. Alertas por reglas simples (anticipo o comisiones, tasa muy alta, pago
+   excesivo).
+5. Resultado con veredicto (conviene, con cuidado, no conviene) y sugerencias
+   fijas.
+6. Menú lateral y modo claro/oscuro.
 
-## Caso de prueba de referencia
-Monto $5,000, plazo 12 meses, cuota $817 → la app debe calcular el total
-pagado, el sobrecosto frente al monto y emitir las alertas correspondientes.
+## Fuera de alcance (no construir)
+Foto de la oferta, puntaje de salud financiera, registro de gastos, historial
+de ofertas, cuentas de usuario, base de datos, IA en el cálculo.
 
-## Fuera de alcance (por ahora)
-- Autenticación de usuarios.
-- Persistencia en base de datos (el perfil vive en el navegador).
-- Asesoría financiera personalizada o regulada.
+## Flujo de la demo (debe funcionar siempre)
+Perfil guardado de "Ana" (ingreso 8000, gastos 4500, deudas 600) y oferta de
+5000 a 12 meses con pago de 817. Resultado esperado: total 9804, extra 4804,
+tasa efectiva anual cercana a 300%, 28% del dinero libre, veredicto
+"no conviene".
+
+## Aviso visible en la app
+Es una estimación informativa. No sustituye el contrato ni la asesoría
+financiera.

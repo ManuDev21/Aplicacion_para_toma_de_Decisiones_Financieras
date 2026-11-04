@@ -1,75 +1,79 @@
 """Cálculos financieros del análisis de ofertas.
 
 Este módulo es la única fuente de verdad de la matemática del producto.
+Todo el cálculo es determinista, basado en fórmulas. Nunca se usa IA.
 """
 
 from __future__ import annotations
 
 
-def total_pagado(cuota_mensual: float, plazo_meses: int) -> float:
-    """Total que se paga a lo largo de todo el plazo."""
-    return round(cuota_mensual * plazo_meses, 2)
+def neto(monto: float, comisiones: float) -> float:
+    """Dinero que realmente recibe la persona (las comisiones se adelantan)."""
+    return round(monto - comisiones, 2)
 
 
-def sobrecosto(monto: float, total: float) -> float:
-    """Dinero pagado por encima del monto financiado (intereses + cargos)."""
-    return round(total - monto, 2)
+def total(pago_mensual: float, plazo_meses: int, comisiones: float) -> float:
+    """Total pagado a lo largo del plazo, más las comisiones adelantadas."""
+    return round(pago_mensual * plazo_meses + comisiones, 2)
 
 
-def sobrecosto_porcentaje(monto: float, sobre: float) -> float:
-    """Sobrecosto expresado como porcentaje del monto financiado."""
-    if monto <= 0:
-        return 0.0
-    return round((sobre / monto) * 100, 2)
+def extra(total_pagado: float, monto: float) -> float:
+    """Dinero pagado por encima del monto recibido."""
+    return round(total_pagado - monto, 2)
 
 
-def tasa_mensual_estimada(
-    monto: float, cuota_mensual: float, plazo_meses: int, iteraciones: int = 200
+def tasa_mensual(
+    neto_recibido: float,
+    pago_mensual: float,
+    plazo_meses: int,
+    iteraciones: int = 200,
 ) -> float:
-    """Estima la tasa de interés mensual de un préstamo de cuota fija.
+    """Estima la tasa mensual ``r`` del préstamo por bisección.
 
-    Resuelve, por bisección, la tasa ``i`` que satisface la fórmula de
-    anualidad:
+    Resuelve la ``r`` que cumple la fórmula de anualidad sobre el neto:
 
-        cuota = monto * i / (1 - (1 + i) ** -plazo)
+        neto = pago * (1 - (1 + r) ** -plazo) / r
 
-    Devuelve la tasa mensual en tanto por uno (p. ej. 0.05 = 5 %). Si no hay
-    interés (la suma de cuotas no supera al monto), devuelve 0.0.
+    Devuelve la tasa mensual en tanto por uno (p. ej. 0.05 = 5 %). Si
+    ``pago * plazo <= neto`` no hay interés y devuelve 0.0.
     """
-    if plazo_meses <= 0 or monto <= 0:
+    if plazo_meses <= 0 or neto_recibido <= 0:
         return 0.0
 
-    # Sin sobrecosto no hay interés que estimar.
-    if cuota_mensual * plazo_meses <= monto:
+    # Sin sobrecosto sobre el neto no hay tasa que estimar.
+    if pago_mensual * plazo_meses <= neto_recibido:
         return 0.0
 
-    def cuota_para_tasa(i: float) -> float:
-        if i == 0:
-            return monto / plazo_meses
-        return monto * i / (1 - (1 + i) ** -plazo_meses)
+    def pago_para_tasa(r: float) -> float:
+        if r == 0:
+            return neto_recibido / plazo_meses
+        return neto_recibido * r / (1 - (1 + r) ** -plazo_meses)
 
     bajo, alto = 0.0, 1.0  # 0 % a 100 % mensual: rango amplio y seguro.
     for _ in range(iteraciones):
         medio = (bajo + alto) / 2
-        if cuota_para_tasa(medio) < cuota_mensual:
+        if pago_para_tasa(medio) < pago_mensual:
             bajo = medio
         else:
             alto = medio
     return round((bajo + alto) / 2, 6)
 
 
-def tasa_anual_desde_mensual(tasa_mensual: float) -> float:
-    """Convierte una tasa mensual (tanto por uno) a tasa anual efectiva en %."""
-    return round(((1 + tasa_mensual) ** 12 - 1) * 100, 2)
+def tasa_efectiva_anual(r_mensual: float) -> float:
+    """Convierte la tasa mensual (tanto por uno) a tasa efectiva anual en %."""
+    return round(((1 + r_mensual) ** 12 - 1) * 100, 2)
 
 
-def ingreso_disponible(ingreso_mensual: float, gastos_fijos: float) -> float:
-    """Ingreso que queda tras cubrir los gastos fijos."""
-    return round(ingreso_mensual - gastos_fijos, 2)
+def libre(ingreso: float, gastos: float, deudas: float) -> float:
+    """Dinero libre al mes tras gastos fijos y pagos de deudas."""
+    return round(ingreso - gastos - deudas, 2)
 
 
-def porcentaje_ingreso_disponible(cuota_mensual: float, disponible: float) -> float:
-    """Qué porcentaje del ingreso disponible se lleva la cuota."""
-    if disponible <= 0:
-        return float("inf")
-    return round((cuota_mensual / disponible) * 100, 2)
+def pct_del_libre(pago_mensual: float, dinero_libre: float) -> float | None:
+    """Porcentaje del dinero libre que se llevaría el pago.
+
+    Devuelve ``None`` si el dinero libre es cero o negativo.
+    """
+    if dinero_libre <= 0:
+        return None
+    return round((pago_mensual / dinero_libre) * 100, 2)

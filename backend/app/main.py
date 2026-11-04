@@ -1,4 +1,4 @@
-"""API FastAPI para analizar ofertas de financiamiento."""
+"""API FastAPI para analizar ofertas de financiamiento (MXN)."""
 
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ from . import calculos
 from .models import AnalisisResponse, AnalizarRequest
 
 app = FastAPI(
-    title="Analizador de decisiones financieras",
+    title="¿Cuánto me cuesta de verdad?",
     description=(
-        "Recibe una oferta de financiamiento y devuelve el costo real, el "
-        "sobrecosto, la tasa estimada y alertas claras."
+        "Recibe una oferta de crédito y devuelve el costo real, la tasa "
+        "efectiva anual, cuánto se paga de más y alertas claras."
     ),
     version="1.0.0",
 )
@@ -47,44 +47,47 @@ def analizar_oferta(payload: AnalizarRequest) -> AnalisisResponse:
 
     Separado del endpoint para poder probarlo sin servidor HTTP.
     """
-    oferta = payload.oferta
+    o = payload.oferta
 
-    total = calculos.total_pagado(oferta.cuota_mensual, oferta.plazo_meses)
-    sobre = calculos.sobrecosto(oferta.monto, total)
-    sobre_pct = calculos.sobrecosto_porcentaje(oferta.monto, sobre)
-    tasa_mensual = calculos.tasa_mensual_estimada(
-        oferta.monto, oferta.cuota_mensual, oferta.plazo_meses
-    )
-    tasa_anual = calculos.tasa_anual_desde_mensual(tasa_mensual)
+    neto = calculos.neto(o.monto, o.comisiones)
+    total = calculos.total(o.pago_mensual, o.plazo_meses, o.comisiones)
+    extra = calculos.extra(total, o.monto)
+    r_mensual = calculos.tasa_mensual(neto, o.pago_mensual, o.plazo_meses)
+    tea = calculos.tasa_efectiva_anual(r_mensual)
 
-    pct_ingreso: float | None = None
+    dinero_libre: float | None = None
+    pct_libre: float | None = None
     if payload.perfil is not None:
-        disponible = calculos.ingreso_disponible(
-            payload.perfil.ingreso_mensual, payload.perfil.gastos_fijos
+        p = payload.perfil
+        dinero_libre = calculos.libre(
+            p.ingreso_mensual, p.gastos_fijos, p.deudas_actuales
         )
-        pct_ingreso = calculos.porcentaje_ingreso_disponible(
-            oferta.cuota_mensual, disponible
-        )
+        pct_libre = calculos.pct_del_libre(o.pago_mensual, dinero_libre)
 
-    lista_alertas = reglas.evaluar(sobre_pct, pct_ingreso)
-    reco = reglas.recomendacion(lista_alertas)
-
-    # El JSON no admite infinito; lo normalizamos a None en la respuesta.
-    pct_ingreso_salida = (
-        None if pct_ingreso == float("inf") else pct_ingreso
+    lista_alertas = reglas.evaluar(
+        tasa_efectiva_anual=tea,
+        comisiones=o.comisiones,
+        monto=o.monto,
+        pct_del_libre=pct_libre,
+        libre=dinero_libre,
     )
+    v = reglas.veredicto(lista_alertas, dinero_libre)
+    sug = reglas.sugerencia(v)
 
     return AnalisisResponse(
-        monto=oferta.monto,
-        plazo_meses=oferta.plazo_meses,
-        cuota_mensual=oferta.cuota_mensual,
-        total_pagado=total,
-        sobrecosto=sobre,
-        sobrecosto_porcentaje=sobre_pct,
-        tasa_mensual_estimada=round(tasa_mensual * 100, 4),
-        tasa_anual_estimada=tasa_anual,
-        porcentaje_ingreso_disponible=pct_ingreso_salida,
-        recomendacion=reco,
+        monto=o.monto,
+        plazo_meses=o.plazo_meses,
+        pago_mensual=o.pago_mensual,
+        comisiones=o.comisiones,
+        neto=neto,
+        total=total,
+        extra=extra,
+        tasa_mensual=round(r_mensual * 100, 4),
+        tasa_efectiva_anual=tea,
+        libre=dinero_libre,
+        pct_del_libre=pct_libre,
+        veredicto=v,
+        sugerencia=sug,
         alertas=lista_alertas,
     )
 
