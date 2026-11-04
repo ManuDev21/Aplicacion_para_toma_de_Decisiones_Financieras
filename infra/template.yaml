@@ -13,8 +13,22 @@ Globals:
 Parameters:
   CorsOrigin:
     Type: String
-    Default: "*"
+    AllowedPattern: "^https?://[^*\\s]+$"
+    ConstraintDescription: >
+      Debe ser la URL exacta del frontend (por ejemplo https://app.ejemplo.com),
+      sin comodines.
     Description: Origen permitido por CORS (la URL del frontend en producción).
+  MaxConcurrency:
+    Type: Number
+    Default: 5
+    MinValue: 0
+    Description: >
+      Límite de ejecuciones simultáneas para acotar abuso y costos. Usa 0 para
+      no reservar concurrencia (cuentas nuevas con límite bajo no permiten
+      reservar).
+
+Conditions:
+  LimitarConcurrencia: !Not [!Equals [!Ref MaxConcurrency, 0]]
 
 Resources:
   AnalizarFunction:
@@ -24,6 +38,10 @@ Resources:
       # El código vive en backend/; app/ es el paquete con la lógica.
       CodeUri: ../backend/
       Handler: app.lambda_handler.handler
+      ReservedConcurrentExecutions: !If
+        - LimitarConcurrencia
+        - !Ref MaxConcurrency
+        - !Ref AWS::NoValue
       Environment:
         Variables:
           CORS_ORIGIN: !Ref CorsOrigin

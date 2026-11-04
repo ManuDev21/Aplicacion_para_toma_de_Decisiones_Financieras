@@ -1,4 +1,4 @@
-"""Modelos de entrada y salida de la API (Pydantic)."""
+﻿"""Modelos de entrada y salida de la API (Pydantic)."""
 
 from __future__ import annotations
 
@@ -6,28 +6,53 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+# Límites máximos de entrada: evitan valores absurdos (1e308, inf, nan) que
+# producirían resultados sin sentido o desbordes numéricos.
+MAX_MONTO = 100_000_000.0
+MAX_PLAZO_MESES = 600
+
 
 class Perfil(BaseModel):
     """Perfil financiero del usuario (todo en MXN)."""
 
-    nombre: str = Field("", description="Nombre del usuario")
-    ingreso_mensual: float = Field(..., ge=0, description="Ingreso mensual neto")
+    nombre: str = Field("", max_length=100, description="Nombre del usuario")
+    ingreso_mensual: float = Field(
+        ..., ge=0, le=MAX_MONTO, allow_inf_nan=False, description="Ingreso mensual neto"
+    )
     gastos_fijos: float = Field(
-        0, ge=0, description="Gastos fijos mensuales (renta, servicios, comida)"
+        0,
+        ge=0,
+        le=MAX_MONTO,
+        allow_inf_nan=False,
+        description="Gastos fijos mensuales (renta, servicios, comida)",
     )
     deudas_actuales: float = Field(
-        0, ge=0, description="Pagos de deudas actuales al mes"
+        0,
+        ge=0,
+        le=MAX_MONTO,
+        allow_inf_nan=False,
+        description="Pagos de deudas actuales al mes",
     )
 
 
 class Oferta(BaseModel):
     """Datos de la oferta de financiamiento a analizar."""
 
-    monto: float = Field(..., gt=0, description="Monto recibido")
-    plazo_meses: int = Field(..., gt=0, description="Número de pagos mensuales")
-    pago_mensual: float = Field(..., gt=0, description="Pago mensual")
+    monto: float = Field(
+        ..., gt=0, le=MAX_MONTO, allow_inf_nan=False, description="Monto recibido"
+    )
+    plazo_meses: int = Field(
+        ..., gt=0, le=MAX_PLAZO_MESES, description="Número de pagos mensuales"
+    )
+    pago_mensual: float = Field(
+        ..., gt=0, le=MAX_MONTO, allow_inf_nan=False, description="Pago mensual"
+    )
     comisiones: float = Field(
-        0, ge=0, description="Comisiones y anticipos (se pagan por adelantado)"
+        0,
+        ge=0,
+        le=MAX_MONTO,
+        allow_inf_nan=False,
+        description="Comisiones y anticipos (se pagan por adelantado)",
     )
 
 

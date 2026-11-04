@@ -13,6 +13,7 @@ Pensado para una Lambda Function URL con CORS. Responde a:
 from __future__ import annotations
 
 import json
+import logging
 import os
 
 from pydantic import ValidationError
@@ -20,7 +21,13 @@ from pydantic import ValidationError
 from .main import analizar_oferta
 from .models import AnalizarRequest
 
-_CORS_ORIGIN = os.getenv("CORS_ORIGIN", "*")
+logger = logging.getLogger(__name__)
+
+# Tamaño máximo aceptado del cuerpo de la petición (la entrada real pesa < 1 KB).
+_MAX_BODY_BYTES = 10_000
+
+# Por defecto solo el dev server de Vite; en producción se define CORS_ORIGIN.
+_CORS_ORIGIN = os.getenv("CORS_ORIGIN", "http://localhost:5173")
 
 _CORS_HEADERS = {
     "Access-Control-Allow-Origin": _CORS_ORIGIN,
@@ -57,10 +64,23 @@ def handler(event: dict, _context=None) -> dict:
     # POST: analizar.
     try:
         raw = event.get("body") or "{}"
+        if len(raw) > _MAX_BODY_BYTES:
+            return _respuesta(413, {"detail": "Cuerpo de la petición demasiado grande."})
         datos = json.loads(raw)
         payload = AnalizarRequest(**datos)
-    except (json.JSONDecodeError, ValidationError, TypeError) as err:
-        return _respuesta(400, {"detail": str(err)})
+    except ValidationError as err:
+        # Solo campo y mensaje: sin valores de entrada ni detalles internos.
+        errores = [
+            {"campo": ".".join(str(p) for p in e["loc"]), "mensaje": e["msg"]}
+            for e in err.errors(include_input=False, include_url=False, include_context=False)
+        ]
+        return _respuesta(400, {"detail": errores})
+    except (json.JSONDecodeError, TypeError):
+        return _respuesta(400, {"detail": "Petición inválida."})
 
-    resultado = analizar_oferta(payload)
+    try:
+        resultado = analizar_oferta(payload)
+    except Exception:  # noqa: BLE001 - nunca exponer detalles internos
+        logger.exception("Error inesperado al analizar la oferta")
+        return _respuesta(500, {"detail": "Error interno del servidor."})
     return _respuesta(200, resultado.model_dump())

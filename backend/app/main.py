@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from . import alertas as reglas
 from . import calculos
@@ -31,9 +33,22 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def _validacion(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Errores 422 sin eco de la entrada (evita fallos con NaN/inf y fugas)."""
+    errores = [
+        {
+            "campo": ".".join(str(p) for p in e["loc"] if p != "body"),
+            "mensaje": e["msg"],
+        }
+        for e in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": errores})
 
 
 @app.get("/salud", tags=["sistema"])

@@ -221,3 +221,86 @@ def test_lambda_handler_body_invalido():
     event = {"requestContext": {"http": {"method": "POST"}}, "body": "{no-json"}
     res = handler(event, None)
     assert res["statusCode"] == 400
+
+
+# ---------- Seguridad: validación de entrada ----------
+
+OFERTA_OK = {"monto": 5000, "plazo_meses": 12, "pago_mensual": 817, "comisiones": 0}
+
+
+def _post(oferta=None, perfil=None):
+    body = {"oferta": {**OFERTA_OK, **(oferta or {})}}
+    if perfil is not None:
+        body["perfil"] = perfil
+    return client.post("/analizar", json=body)
+
+
+def test_rechaza_monto_absurdo():
+    assert _post({"monto": 1e308, "pago_mensual": 1e308}).status_code == 422
+
+
+def test_rechaza_plazo_enorme():
+    assert _post({"plazo_meses": 10**9}).status_code == 422
+
+
+def test_rechaza_pago_y_comisiones_absurdos():
+    assert _post({"pago_mensual": 1e300}).status_code == 422
+    assert _post({"comisiones": 1e300}).status_code == 422
+
+
+def test_rechaza_perfil_fuera_de_rango_y_nombre_largo():
+    base = {"ingreso_mensual": 8000, "gastos_fijos": 4500, "deudas_actuales": 600}
+    assert _post(perfil={**base, "ingreso_mensual": 1e300}).status_code == 422
+    assert _post(perfil={**base, "nombre": "x" * 101}).status_code == 422
+
+
+def test_rechaza_nan_e_infinito():
+    for valor in ("NaN", "Infinity"):
+        r = client.post(
+            "/analizar",
+            content='{"oferta": {"monto": %s, "plazo_meses": 12, "pago_mensual": 817}}'
+            % valor,
+            headers={"Content-Type": "application/json"},
+        )
+        assert r.status_code == 422
+
+
+def test_lambda_handler_no_expone_detalles_internos():
+    import json
+
+    from app.lambda_handler import handler
+
+    event = {
+        "requestContext": {"http": {"method": "POST"}},
+        "body": json.dumps({"oferta": {**OFERTA_OK, "monto": 1e308}}),
+    }
+    res = handler(event, None)
+    assert res["statusCode"] == 400
+    cuerpo = res["body"]
+    assert "pydantic" not in cuerpo.lower()
+    assert "1e+308" not in cuerpo and "input_value" not in cuerpo
+
+
+def test_lambda_handler_cuerpo_demasiado_grande():
+    from app.lambda_handler import handler
+
+    event = {"requestContext": {"http": {"method": "POST"}}, "body": "x" * 20_000}
+    assert handler(event, None)["statusCode"] == 413
+
+
+def test_lambda_handler_error_inesperado_da_500_generico(monkeypatch):
+    import json
+
+    from app import lambda_handler
+
+    def falla(_):
+        raise RuntimeError("detalle secreto")
+
+    monkeypatch.setattr(lambda_handler, "analizar_oferta", falla)
+    event = {
+        "requestContext": {"http": {"method": "POST"}},
+        "body": json.dumps({"oferta": OFERTA_OK}),
+    }
+    res = lambda_handler.handler(event, None)
+    assert res["statusCode"] == 500
+    assert "secreto" not in res["body"]
