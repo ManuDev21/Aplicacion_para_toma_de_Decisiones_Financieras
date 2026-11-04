@@ -56,7 +56,7 @@ python -m venv .venv
 # macOS / Linux:
 # source .venv/bin/activate
 
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # incluye pytest y httpx
 uvicorn app.main:app --reload
 ```
 
@@ -91,6 +91,11 @@ cd infra
 sam build
 sam deploy --guided
 ```
+
+Durante el despliegue se pide `CorsOrigin`: debe ser la URL exacta del frontend
+(sin `*`). `MaxConcurrency` (por defecto 5) limita las ejecuciones simultáneas
+para acotar abuso y costos; usa `0` si tu cuenta tiene un límite de
+concurrencia bajo y no permite reservar.
 
 El output `FunctionUrl` es la URL pública de la API: ponla en `VITE_API_URL`
 del frontend antes de publicar. El frontend se puede alojar en Amplify Hosting
