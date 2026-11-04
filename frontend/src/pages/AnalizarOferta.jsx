@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import AlertList from "../components/AlertList.jsx";
-import MetricCard from "../components/MetricCard.jsx";
+import EstadoPill from "../components/EstadoPill.jsx";
+import ValorAnimado from "../components/ValorAnimado.jsx";
+import BarraLibre from "../components/charts/BarraLibre.jsx";
+import DonaCosto from "../components/charts/DonaCosto.jsx";
+import LineaSaldo from "../components/charts/LineaSaldo.jsx";
 import { IconBombilla, IconInfo } from "../components/icons.jsx";
+import { useAnalisis } from "../hooks/useAnalisis.js";
 import { usePerfil } from "../hooks/usePerfil.js";
-import { analizarOferta } from "../services/api.js";
-import { mxn, pct } from "../services/formato.js";
+import { mxn } from "../services/formato.js";
 
 const OFERTA_INICIAL = {
   monto: "5000",
@@ -19,58 +23,37 @@ const ETIQUETA_VEREDICTO = {
   conviene: "Sí te conviene",
 };
 
-function aNumero(v) {
-  const n = parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
 /** Página principal: analizar una oferta de financiamiento. */
 export default function AnalizarOferta() {
   const { perfilParaApi } = usePerfil();
   const [oferta, setOferta] = useState(OFERTA_INICIAL);
-  const [resultado, setResultado] = useState(null);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState(null);
+
+  // El perfil para la API se memoriza para que el hook no se dispare de más.
+  const perfilApi = useMemo(() => perfilParaApi(), [perfilParaApi]);
+
+  // Análisis reactivo: se recalcula solo al cambiar cualquier campo.
+  const { resultado, estado, error } = useAnalisis(oferta, perfilApi);
 
   function actualizar(campo, valor) {
     setOferta((o) => ({ ...o, [campo]: valor }));
   }
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    setCargando(true);
-    setError(null);
-
-    try {
-      const payload = {
-        oferta: {
-          monto: aNumero(oferta.monto),
-          plazo_meses: parseInt(oferta.plazo_meses, 10) || 0,
-          pago_mensual: aNumero(oferta.pago_mensual),
-          comisiones: aNumero(oferta.comisiones),
-        },
-        perfil: perfilParaApi(),
-      };
-      const data = await analizarOferta(payload);
-      setResultado(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
-  }
-
   return (
     <div className="content">
-      <h2 className="page-title">Analizar oferta</h2>
-      <p className="page-sub">
-        Captura los datos de la oferta y mira cuánto te cuesta de verdad, según
-        tu perfil.
-      </p>
+      <div className="title-row">
+        <div>
+          <h2 className="page-title">Analizar oferta</h2>
+          <p className="page-sub">
+            Captura los datos de la oferta y mira cuánto te cuesta de verdad,
+            según tu perfil. Se actualiza solo.
+          </p>
+        </div>
+        <EstadoPill estado={estado} />
+      </div>
 
       <div className="grid-2">
         {/* Columna izquierda: formulario */}
-        <form className="card" onSubmit={onSubmit}>
+        <form className="card" onSubmit={(e) => e.preventDefault()}>
           <h3 className="card-title">Datos de la oferta</h3>
 
           <div className="field">
@@ -80,7 +63,6 @@ export default function AnalizarOferta() {
               type="number"
               min="0"
               step="0.01"
-              required
               value={oferta.monto}
               onChange={(e) => actualizar("monto", e.target.value)}
             />
@@ -93,7 +75,6 @@ export default function AnalizarOferta() {
               type="number"
               min="1"
               step="1"
-              required
               value={oferta.plazo_meses}
               onChange={(e) => actualizar("plazo_meses", e.target.value)}
             />
@@ -106,7 +87,6 @@ export default function AnalizarOferta() {
               type="number"
               min="0"
               step="0.01"
-              required
               value={oferta.pago_mensual}
               onChange={(e) => actualizar("pago_mensual", e.target.value)}
             />
@@ -124,9 +104,10 @@ export default function AnalizarOferta() {
             />
           </div>
 
-          <button className="btn" type="submit" disabled={cargando}>
-            {cargando ? "Calculando..." : "Calcular costo real"}
-          </button>
+          <p className="hint">
+            <IconInfo width={14} height={14} />
+            El resultado se recalcula automáticamente mientras escribes.
+          </p>
 
           {error && <p className="error-text">No se pudo calcular: {error}</p>}
         </form>
@@ -141,9 +122,13 @@ export default function AnalizarOferta() {
                     <p className="result-caption">
                       Por un préstamo de {mxn(resultado.monto)} pagarías
                     </p>
-                    <p className="result-amount">{mxn(resultado.total)}</p>
+                    <p className="result-amount">
+                      <ValorAnimado valor={resultado.total} formato="mxn" />
+                    </p>
                     <p className="result-extra">
-                      Son {mxn(resultado.extra)} de más
+                      Son{" "}
+                      <ValorAnimado valor={resultado.extra} formato="mxn" /> de
+                      más
                     </p>
                   </div>
                   <span className={`badge ${resultado.veredicto}`}>
@@ -153,18 +138,47 @@ export default function AnalizarOferta() {
               </div>
 
               <div className="metric-grid" style={{ marginTop: "1.1rem" }}>
-                <MetricCard
-                  label="Tasa efectiva anual"
-                  value={`≈ ${pct(resultado.tasa_efectiva_anual)}`}
-                />
-                <MetricCard
-                  label="Pago vs. tu dinero libre"
-                  value={
-                    resultado.pct_del_libre != null
-                      ? pct(resultado.pct_del_libre)
-                      : "—"
-                  }
-                />
+                <div className="metric">
+                  <div className="m-label">Tasa efectiva anual</div>
+                  <div className="m-value">
+                    ≈{" "}
+                    <ValorAnimado
+                      valor={resultado.tasa_efectiva_anual}
+                      formato="pct"
+                    />
+                  </div>
+                </div>
+                <div className="metric">
+                  <div className="m-label">Pago vs. tu dinero libre</div>
+                  <div className="m-value">
+                    {resultado.pct_del_libre != null ? (
+                      <ValorAnimado
+                        valor={resultado.pct_del_libre}
+                        formato="pct"
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Gráficas */}
+              <div className="card" style={{ marginTop: "1.1rem" }}>
+                <h3 className="card-title">Visual del costo</h3>
+                <div className="charts-grid">
+                  <DonaCosto monto={resultado.monto} extra={resultado.extra} />
+                  <BarraLibre pct={resultado.pct_del_libre} />
+                </div>
+                <div style={{ marginTop: "0.6rem" }}>
+                  <p className="chart-titulo">Cómo baja tu deuda</p>
+                  <LineaSaldo
+                    neto={resultado.neto}
+                    pago={resultado.pago_mensual}
+                    plazo={resultado.plazo_meses}
+                    tasaMensualPct={resultado.tasa_mensual}
+                  />
+                </div>
               </div>
 
               <div className="card" style={{ marginTop: "1.1rem" }}>
@@ -187,8 +201,8 @@ export default function AnalizarOferta() {
               <div className="alert info">
                 <IconInfo />
                 <span>
-                  Captura la oferta y pulsa <strong>Calcular costo real</strong>{" "}
-                  para ver el análisis.
+                  Captura el monto, el plazo y el pago mensual para ver el
+                  análisis al instante.
                 </span>
               </div>
             </div>
